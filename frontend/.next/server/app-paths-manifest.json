@@ -1,0 +1,7 @@
+{
+  "/dashboard/page": "app/dashboard/page.js",
+  "/entities/[id]/compare/page": "app/entities/[id]/compare/page.js",
+  "/entities/[id]/page": "app/entities/[id]/page.js",
+  "/statistics/page": "app/statistics/page.js",
+  "/entities/new/page": "app/entities/new/page.js"
+}
