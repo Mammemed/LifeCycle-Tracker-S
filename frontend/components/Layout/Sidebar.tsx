@@ -9,7 +9,8 @@ export default function Sidebar() {
   const menuItems = [
     { path: '/dashboard', label: 'Dashboard', icon: '📊' },
     { path: '/entities/new', label: 'New Entity', icon: '➕' },
-    { path: '/statistics', label: 'Statistics', icon: '📈' }
+    { path: '/statistics', label: 'Statistics', icon: '📈' },
+    { path: '/predictions', label: 'AI Predictions', icon: '🤖' }
   ]
 
   const isActive = (path: string) => {

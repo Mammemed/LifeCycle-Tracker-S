@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { getEntityById, changeEntityStatus, addComment, createVersion } from '@/lib/api'
-import type { Entity } from '@/lib/api'
+import { getEntityById, changeEntityStatus, addComment, createVersion, getEntityPrediction } from '@/lib/api'
+import type { Entity, EntityPrediction } from '@/lib/api'
 import StatusBadge from '@/components/StatusBadge'
 import Timeline from '@/components/Timeline'
 
@@ -21,9 +21,12 @@ export default function EntityDetailsPage() {
   const [newComment, setNewComment] = useState({ author: 'Current User', text: '' })
   const [showVersionForm, setShowVersionForm] = useState(false)
   const [newVersion, setNewVersion] = useState({ changeSummary: '' })
+  const [prediction, setPrediction] = useState<EntityPrediction | null>(null)
+  const [loadingPrediction, setLoadingPrediction] = useState(false)
 
   useEffect(() => {
     loadEntity()
+    loadPrediction()
   }, [entityId])
 
   const loadEntity = async () => {
@@ -34,6 +37,18 @@ export default function EntityDetailsPage() {
       console.error('Error loading entity:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadPrediction = async () => {
+    setLoadingPrediction(true)
+    try {
+      const data = await getEntityPrediction(entityId)
+      setPrediction(data)
+    } catch (error) {
+      console.error('Error loading prediction:', error)
+    } finally {
+      setLoadingPrediction(false)
     }
   }
 
@@ -213,6 +228,70 @@ export default function EntityDetailsPage() {
             >
               Apply
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* AI Predictions */}
+      {prediction && (
+        <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-6 rounded-lg shadow border border-purple-200">
+          <h2 className="text-xl font-semibold mb-4 flex items-center">
+            <span className="mr-2">🤖</span>
+            AI Predictions
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Success Probability */}
+            <div className="bg-white p-4 rounded-lg">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm font-medium text-gray-700">Success Probability</span>
+                <span className={`px-2 py-1 text-xs rounded ${
+                  prediction.successConfidence === 'high' ? 'bg-green-100 text-green-800' :
+                  prediction.successConfidence === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                  'bg-red-100 text-red-800'
+                }`}>
+                  {prediction.successConfidence}
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-6 mb-2">
+                <div
+                  className={`h-6 rounded-full flex items-center justify-center text-sm font-semibold text-white ${
+                    prediction.successProbability >= 70 ? 'bg-green-500' :
+                    prediction.successProbability >= 40 ? 'bg-yellow-500' : 'bg-red-500'
+                  }`}
+                  style={{ width: `${prediction.successProbability}%` }}
+                >
+                  {prediction.successProbability}%
+                </div>
+              </div>
+              <p className="text-xs text-gray-600">{prediction.successReasoning}</p>
+            </div>
+
+            {/* Time Estimate */}
+            <div className="bg-white p-4 rounded-lg">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm font-medium text-gray-700">Estimated Completion</span>
+                <span className={`px-2 py-1 text-xs rounded ${
+                  prediction.timeConfidence === 'high' ? 'bg-green-100 text-green-800' :
+                  prediction.timeConfidence === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                  'bg-red-100 text-red-800'
+                }`}>
+                  {prediction.timeConfidence}
+                </span>
+              </div>
+              <div className="text-2xl font-bold text-blue-600 mb-2">
+                {prediction.daysRemaining > 0 ? `${prediction.daysRemaining.toFixed(1)} days` : 'Completed'}
+              </div>
+              {prediction.estimatedCompletionDate && (
+                <p className="text-sm text-gray-600 mb-1">
+                  {new Date(prediction.estimatedCompletionDate).toLocaleDateString('fr-FR', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                  })}
+                </p>
+              )}
+              <p className="text-xs text-gray-600">{prediction.timeReasoning}</p>
+            </div>
           </div>
         </div>
       )}

@@ -1,14 +1,15 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { getStatisticsAnalytics } from '@/lib/api'
+import { getStatisticsAnalytics, getStatisticsSummary } from '@/lib/api'
 import StatusPieChart from '@/components/Charts/StatusPieChart'
 import EntityStagesBarChart from '@/components/Charts/EntityStagesBarChart'
 import ActivityHeatmap from '@/components/Charts/ActivityHeatmap'
-import type { StatisticsAnalytics } from '@/lib/api'
+import type { StatisticsAnalytics, StatisticsSummary } from '@/lib/api'
 
 export default function StatisticsPage() {
   const [analytics, setAnalytics] = useState<StatisticsAnalytics | null>(null)
+  const [stats, setStats] = useState<StatisticsSummary | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -17,8 +18,12 @@ export default function StatisticsPage() {
 
   const loadAnalytics = async () => {
     try {
-      const data = await getStatisticsAnalytics()
-      setAnalytics(data)
+      const [analyticsData, statsData] = await Promise.all([
+        getStatisticsAnalytics(),
+        getStatisticsSummary()
+      ])
+      setAnalytics(analyticsData)
+      setStats(statsData)
     } catch (error) {
       console.error('Error loading analytics:', error)
     } finally {
@@ -28,12 +33,17 @@ export default function StatisticsPage() {
 
   const handleExportPDF = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/reports/export/pdf')
-      const data = await response.json()
-      alert('PDF export initiated. Check console for data.')
-      console.log(data)
+      if (!analytics || !stats) {
+        alert('Please wait for data to load before exporting')
+        return
+      }
+
+      // Import and use PDF export utility
+      const { exportStatisticsToPDF } = await import('@/lib/utils/pdfExport')
+      await exportStatisticsToPDF(stats, analytics, 'lifecycle-statistics-report.pdf')
     } catch (error) {
-      console.error('Export error:', error)
+      console.error('PDF export error:', error)
+      alert('Failed to export PDF. Please try again.')
     }
   }
 

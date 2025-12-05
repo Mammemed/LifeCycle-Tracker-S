@@ -166,3 +166,52 @@ export const getStatisticsAnalytics = async (): Promise<StatisticsAnalytics> => 
   return response.data
 }
 
+// Predictions API
+export interface Prediction {
+  entityId: string
+  title: string
+  type: string
+  currentStatus: string
+  successProbability: number
+  successConfidence: 'low' | 'medium' | 'high'
+  successReasoning: string
+  daysRemaining: number
+  estimatedCompletionDate: string | null
+  timeConfidence: 'low' | 'medium' | 'high'
+  timeReasoning: string
+  transitionsCount: number
+  createdAt: string
+}
+
+export interface PredictionsResponse {
+  predictions: Prediction[]
+  summary: {
+    totalEntities: number
+    averageSuccessProbability: number
+    averageDaysRemaining: number
+  }
+}
+
+export interface EntityPrediction {
+  entityId: string
+  title: string
+  currentStatus: string
+  successProbability: number
+  successConfidence: 'low' | 'medium' | 'high'
+  successReasoning: string
+  daysRemaining: number
+  estimatedCompletionDate: string | null
+  timeConfidence: 'low' | 'medium' | 'high'
+  timeReasoning: string
+}
+
+export const getPredictions = async (): Promise<PredictionsResponse> => {
+  const response = await api.get('/statistics/predictions')
+  return response.data
+}
+
+export const getEntityPrediction = async (id: string): Promise<EntityPrediction> => {
+  const response = await api.get(`/statistics/predictions/${id}`)
+  return response.data
+}
+
