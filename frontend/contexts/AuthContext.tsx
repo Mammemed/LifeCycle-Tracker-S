@@ -28,7 +28,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
   const router = useRouter()
 
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
+  // Use relative paths for API routes (works both locally and on Vercel)
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api'
 
   // Load auth state from localStorage on mount
   useEffect(() => {

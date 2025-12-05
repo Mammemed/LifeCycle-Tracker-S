@@ -83,7 +83,7 @@ export default function DashboardPage() {
             <button
               onClick={async () => {
                 try {
-                  const response = await fetch('http://localhost:5000/api/reports/export/csv')
+                  const response = await fetch('/api/reports/export/csv')
                   const blob = await response.blob()
                   const url = window.URL.createObjectURL(blob)
                   const a = document.createElement('a')
