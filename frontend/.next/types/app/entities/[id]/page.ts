@@ -1,4 +1,4 @@
-// File: C:\Users\lapto\OneDrive\Bureau\LifeCycle\frontend\app\entities\[id]\page.tsx
+// File: C:\Users\HP\LifeCycle-Tracker-S\frontend\app\entities\[id]\page.tsx
 import * as entry from '../../../../../app/entities/[id]/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

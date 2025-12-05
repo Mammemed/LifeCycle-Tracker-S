@@ -1,13 +1,21 @@
 const Entity = require('../models/entityModel');
 const mongoose = require('mongoose');
 
-// Export CSV (simple implementation)
+// Export CSV (only for current user)
 exports.exportCSV = async (req, res, next) => {
   try {
     if (mongoose.connection.readyState !== 1) {
       return res.status(503).json({ error: 'Database not connected' });
     }
-    const entities = await Entity.find({}).select('title type currentStatus createdAt updatedAt');
+    
+    // تحقق من وجود المستخدم في الـ req (من authMiddleware)
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    
+    // جلب كيانات المستخدم فقط
+    const entities = await Entity.find({ owner: req.user.id })
+      .select('title type currentStatus createdAt updatedAt');
     
     // Simple CSV generation
     const headers = 'Title,Type,Status,Created At,Updated At\n';
@@ -25,13 +33,20 @@ exports.exportCSV = async (req, res, next) => {
   }
 };
 
-// Export PDF (simple implementation - returns JSON for now, can be enhanced with PDF library)
+// Export PDF (only for current user)
 exports.exportPDF = async (req, res, next) => {
   try {
     if (mongoose.connection.readyState !== 1) {
       return res.status(503).json({ error: 'Database not connected' });
     }
-    const entities = await Entity.find({});
+    
+    // تحقق من وجود المستخدم في الـ req (من authMiddleware)
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    
+    // جلب كيانات المستخدم فقط
+    const entities = await Entity.find({ owner: req.user.id });
     
     // For demo purposes, return JSON
     // In production, use a library like pdfkit or puppeteer
@@ -44,4 +59,3 @@ exports.exportPDF = async (req, res, next) => {
     next(error);
   }
 };
-

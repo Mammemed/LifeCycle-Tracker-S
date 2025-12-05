@@ -5,7 +5,8 @@ const config = require('./config');
 const requestLogger = require('./middleware/requestLogger');
 const errorHandler = require('./middleware/errorHandler');
 const entityRoutes = require('./routes/entityRoutes');
-
+const authRoutes = require('./routes/authRoutes');
+// أضف هذا مع بقية المسارات
 const app = express();
 
 // Middleware
@@ -26,6 +27,8 @@ mongoose.connect(config.mongoURI)
 app.use('/api/entities', entityRoutes);
 app.use('/api/statistics', require('./routes/statisticsRoutes'));
 app.use('/api/reports', require('./routes/reportRoutes'));
+app.use('/api/auth', authRoutes);
+
 
 // Health check
 app.get('/api/health', (req, res) => {

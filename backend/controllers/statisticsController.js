@@ -8,7 +8,7 @@ const {
   computeUserActivityHeatmap
 } = require('../utils/statsUtils');
 
-// Get summary KPIs
+// Get summary KPIs for current user only
 exports.getSummary = async (req, res, next) => {
   try {
     if (mongoose.connection.readyState !== 1) {
@@ -19,7 +19,15 @@ exports.getSummary = async (req, res, next) => {
         successRate: 0
       });
     }
-    const entities = await Entity.find({});
+    
+    // تحقق من وجود المستخدم في الـ req (من authMiddleware)
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    
+    // جلب كيانات المستخدم فقط
+    const entities = await Entity.find({ owner: req.user.id });
+    
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -51,7 +59,7 @@ exports.getSummary = async (req, res, next) => {
   }
 };
 
-// Get detailed analytics
+// Get detailed analytics for current user only
 exports.getAnalytics = async (req, res, next) => {
   try {
     if (mongoose.connection.readyState !== 1) {
@@ -66,7 +74,14 @@ exports.getAnalytics = async (req, res, next) => {
         userActivityOverTime: {}
       });
     }
-    const entities = await Entity.find({});
+    
+    // تحقق من وجود المستخدم في الـ req (من authMiddleware)
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    
+    // جلب كيانات المستخدم فقط
+    const entities = await Entity.find({ owner: req.user.id });
 
     const statusDistribution = computeStatusDistribution(entities);
     const averageTimePerStatus = computeAverageTimePerStatus(entities);
@@ -88,4 +103,3 @@ exports.getAnalytics = async (req, res, next) => {
     next(error);
   }
 };
-

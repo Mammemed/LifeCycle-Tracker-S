@@ -1,4 +1,4 @@
-// File: C:\Users\lapto\OneDrive\Bureau\LifeCycle\frontend\app\layout.tsx
+// File: C:\Users\HP\LifeCycle-Tracker-S\frontend\app\layout.tsx
 import * as entry from '../../../app/layout.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

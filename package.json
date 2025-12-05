@@ -1,15 +1,14 @@
 {
-  "name": "lifecycle-tracker",
+  "name": "frontend",
   "version": "1.0.0",
-  "description": "LifeCycle Tracker - Track and visualize entity lifecycles",
   "scripts": {
-    "install:all": "cd backend && npm install && cd ../frontend && npm install",
-    "dev:backend": "cd backend && npm run dev",
-    "dev:frontend": "cd frontend && npm run dev",
-    "build:frontend": "cd frontend && npm run build"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
   },
-  "keywords": ["lifecycle", "tracker", "hackathon"],
-  "author": "",
-  "license": "ISC"
+  "dependencies": {
+    "next": "^13.5.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  }
 }
-

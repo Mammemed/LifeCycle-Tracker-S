@@ -1,149 +1,113 @@
 const Entity = require('../models/entityModel');
 const mongoose = require('mongoose');
 
-// Get all entities (with basic info)
+// Get all entities for current user only
 exports.getAllEntities = async (req, res, next) => {
   try {
-    // Check if mongoose is connected
     if (mongoose.connection.readyState !== 1) {
-      return res.json([]); // Return empty array if DB not connected
+      return res.json([]);
     }
-    const entities = await Entity.find({})
-      .select('title description type currentStatus createdAt updatedAt')
-      .sort({ updatedAt: -1 });
+    
+    // تحقق من وجود المستخدم في الـ req (من authMiddleware)
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    
+    const entities = await Entity.find({ owner: req.user.id }).sort({ updatedAt: -1 });
     res.json(entities);
   } catch (error) {
-    console.error('Error getting entities:', error);
-    res.json([]); // Return empty array on error for demo
+    next(error);
   }
 };
 
-// Get single entity with full details
+// Create new entity for current user
+exports.createEntity = async (req, res, next) => {
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({ error: 'Database not connected' });
+    }
+    
+    // تحقق من وجود المستخدم في الـ req (من authMiddleware)
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    
+    const entity = new Entity({
+      ...req.body,
+      owner: req.user.id, // ربط الكيان بالمستخدم
+      statusHistory: [{
+        fromStatus: null,
+        toStatus: req.body.initialStatus || 'draft',
+        changedAt: new Date(),
+        changedBy: req.user.id,
+        comment: 'Entity created'
+      }]
+    });
+    
+    await entity.save();
+    res.status(201).json(entity);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get entity by ID (only if owned by user)
 exports.getEntityById = async (req, res, next) => {
   try {
     if (mongoose.connection.readyState !== 1) {
       return res.status(503).json({ error: 'Database not connected' });
     }
-    const entity = await Entity.findById(req.params.id);
+    
+    // تحقق من وجود المستخدم في الـ req (من authMiddleware)
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    
+    const entity = await Entity.findOne({
+      _id: req.params.id,
+      owner: req.user.id // التأكد من أن المستخدم يملك الكيان
+    });
+    
     if (!entity) {
       return res.status(404).json({ error: 'Entity not found' });
     }
+    
     res.json(entity);
   } catch (error) {
     next(error);
   }
 };
 
-// Create new entity
-exports.createEntity = async (req, res, next) => {
-  try {
-    // Check MongoDB connection state
-    const connectionState = mongoose.connection.readyState;
-    // 0 = disconnected, 1 = connected, 2 = connecting, 3 = disconnecting
-    console.log('MongoDB connection state:', connectionState);
-    
-    if (connectionState !== 1) {
-      const stateMessages = {
-        0: 'disconnected',
-        2: 'connecting',
-        3: 'disconnecting'
-      };
-      return res.status(503).json({ 
-        error: 'Database not connected',
-        details: `MongoDB is ${stateMessages[connectionState] || 'not available'}. Please start MongoDB or wait for connection.`,
-        connectionState
-      });
-    }
-
-    const { title, description, initialStatus = 'draft', type = 'article' } = req.body;
-    console.log('Creating entity with data:', { title, description, initialStatus, type });
-
-    if (!title || title.trim() === '') {
-      return res.status(400).json({ error: 'Title is required and cannot be empty' });
-    }
-
-    // Initialize with first status history entry
-    const statusHistory = [{
-      fromStatus: null,
-      toStatus: initialStatus,
-      changedAt: new Date(),
-      changedBy: req.body.createdBy || 'System',
-      comment: 'Initial status'
-    }];
-
-    // Initialize with version 1
-    const versions = [{
-      versionNumber: 1,
-      content: { 
-        title: title || '', 
-        description: description || '', 
-        type: type || 'article' 
-      },
-      createdAt: new Date(),
-      createdBy: req.body.createdBy || 'System',
-      changeSummary: 'Initial version'
-    }];
-
-    // Initialize with first contributor if provided
-    const contributors = req.body.createdBy ? [{
-      name: req.body.createdBy,
-      role: 'author',
-      lastActiveAt: new Date()
-    }] : [];
-
-    const entity = new Entity({
-      title,
-      description: description || '',
-      type,
-      currentStatus: initialStatus,
-      statusHistory,
-      versions,
-      contributors
-    });
-
-    await entity.save();
-    res.status(201).json(entity);
-  } catch (error) {
-    console.error('Error creating entity:', error);
-    console.error('Error details:', {
-      name: error.name,
-      message: error.message,
-      stack: error.stack
-    });
-    next(error);
-  }
-};
-
-// Change entity status
+// Change entity status (only if owned by user)
 exports.changeStatus = async (req, res, next) => {
   try {
     if (mongoose.connection.readyState !== 1) {
-      return res.status(503).json({ error: 'Database not connected. Please start MongoDB.' });
+      return res.status(503).json({ error: 'Database not connected' });
     }
-    const { toStatus, changedBy, comment } = req.body;
-    const entity = await Entity.findById(req.params.id);
-
+    
+    // تحقق من وجود المستخدم في الـ req (من authMiddleware)
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    
+    const entity = await Entity.findOne({
+      _id: req.params.id,
+      owner: req.user.id // التأكد من أن المستخدم يملك الكيان
+    });
+    
     if (!entity) {
       return res.status(404).json({ error: 'Entity not found' });
     }
-
-    if (!toStatus || !changedBy) {
-      return res.status(400).json({ error: 'toStatus and changedBy are required' });
-    }
-
-    // Add to status history
+    
+    entity.currentStatus = req.body.toStatus;
     entity.statusHistory.push({
       fromStatus: entity.currentStatus,
-      toStatus,
+      toStatus: req.body.toStatus,
       changedAt: new Date(),
-      changedBy,
-      comment: comment || ''
+      changedBy: req.user.id,
+      comment: req.body.comment || ''
     });
-
-    // Update current status
-    entity.currentStatus = toStatus;
-    entity.updatedAt = new Date();
-
+    
     await entity.save();
     res.json(entity);
   } catch (error) {
@@ -151,32 +115,35 @@ exports.changeStatus = async (req, res, next) => {
   }
 };
 
-// Add comment
+// Add comment (only if owned by user)
 exports.addComment = async (req, res, next) => {
   try {
     if (mongoose.connection.readyState !== 1) {
-      return res.status(503).json({ error: 'Database not connected. Please start MongoDB.' });
+      return res.status(503).json({ error: 'Database not connected' });
     }
-    const { author, text, linkedToVersion, linkedToStatus } = req.body;
-    const entity = await Entity.findById(req.params.id);
-
+    
+    // تحقق من وجود المستخدم في الـ req (من authMiddleware)
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    
+    const entity = await Entity.findOne({
+      _id: req.params.id,
+      owner: req.user.id // التأكد من أن المستخدم يملك الكيان
+    });
+    
     if (!entity) {
       return res.status(404).json({ error: 'Entity not found' });
     }
-
-    if (!author || !text) {
-      return res.status(400).json({ error: 'author and text are required' });
-    }
-
+    
     entity.comments.push({
-      author,
-      text,
+      author: req.user.id,
+      text: req.body.text,
       createdAt: new Date(),
-      linkedToVersion: linkedToVersion || null,
-      linkedToStatus: linkedToStatus || null
+      linkedToVersion: req.body.linkedToVersion || null,
+      linkedToStatus: req.body.linkedToStatus || null
     });
-
-    entity.updatedAt = new Date();
+    
     await entity.save();
     res.json(entity);
   } catch (error) {
@@ -184,55 +151,40 @@ exports.addComment = async (req, res, next) => {
   }
 };
 
-// Create new version
+// Create new version (only if owned by user)
 exports.createVersion = async (req, res, next) => {
   try {
     if (mongoose.connection.readyState !== 1) {
-      return res.status(503).json({ error: 'Database not connected. Please start MongoDB.' });
+      return res.status(503).json({ error: 'Database not connected' });
     }
-    const { content, createdBy, changeSummary } = req.body;
-    const entity = await Entity.findById(req.params.id);
-
+    
+    // تحقق من وجود المستخدم في الـ req (من authMiddleware)
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    
+    const entity = await Entity.findOne({
+      _id: req.params.id,
+      owner: req.user.id // التأكد من أن المستخدم يملك الكيان
+    });
+    
     if (!entity) {
       return res.status(404).json({ error: 'Entity not found' });
     }
-
-    if (!createdBy) {
-      return res.status(400).json({ error: 'createdBy is required' });
-    }
-
-    // Get next version number
-    const nextVersionNumber = entity.versions.length > 0
-      ? Math.max(...entity.versions.map(v => v.versionNumber)) + 1
-      : 1;
-
-    // Ensure content is properly formatted
-    const versionContent = content ? {
-      title: content.title || entity.title || '',
-      description: content.description || entity.description || '',
-      type: content.type || entity.type || 'article'
-    } : {
-      title: entity.title || '',
-      description: entity.description || '',
-      type: entity.type || 'article'
-    };
-
+    
+    const versionNumber = (entity.versions?.length || 0) + 1;
     entity.versions.push({
-      versionNumber: nextVersionNumber,
-      content: versionContent,
+      versionNumber: versionNumber,
+      content: req.body.content || {
+        title: entity.title,
+        description: entity.description,
+        type: entity.type
+      },
       createdAt: new Date(),
-      createdBy,
-      changeSummary: changeSummary || `Version ${nextVersionNumber}`
+      createdBy: req.user.id,
+      changeSummary: req.body.changeSummary || `Version ${versionNumber} created`
     });
-
-    // Update entity fields if content provided
-    if (content) {
-      if (content.title) entity.title = content.title;
-      if (content.description) entity.description = content.description;
-      if (content.type) entity.type = content.type;
-    }
-
-    entity.updatedAt = new Date();
+    
     await entity.save();
     res.json(entity);
   } catch (error) {
@@ -240,53 +192,74 @@ exports.createVersion = async (req, res, next) => {
   }
 };
 
-// Get versions
+// Get versions (only if owned by user)
 exports.getVersions = async (req, res, next) => {
   try {
     if (mongoose.connection.readyState !== 1) {
       return res.status(503).json({ error: 'Database not connected' });
     }
-    const entity = await Entity.findById(req.params.id);
+    
+    // تحقق من وجود المستخدم في الـ req (من authMiddleware)
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    
+    const entity = await Entity.findOne({
+      _id: req.params.id,
+      owner: req.user.id // التأكد من أن المستخدم يملك الكيان
+    });
+    
     if (!entity) {
       return res.status(404).json({ error: 'Entity not found' });
     }
-    res.json(entity.versions);
+    
+    res.json(entity.versions || []);
   } catch (error) {
     next(error);
   }
 };
 
-// Compare versions
+// Compare versions (only if owned by user)
 exports.compareVersions = async (req, res, next) => {
   try {
     if (mongoose.connection.readyState !== 1) {
       return res.status(503).json({ error: 'Database not connected' });
     }
-    const { from, to } = req.query;
-    const entity = await Entity.findById(req.params.id);
-
+    
+    // تحقق من وجود المستخدم في الـ req (من authMiddleware)
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    
+    const entity = await Entity.findOne({
+      _id: req.params.id,
+      owner: req.user.id // التأكد من أن المستخدم يملك الكيان
+    });
+    
     if (!entity) {
       return res.status(404).json({ error: 'Entity not found' });
     }
-
-    const versionFrom = entity.versions.find(v => v.versionNumber === parseInt(from));
-    const versionTo = entity.versions.find(v => v.versionNumber === parseInt(to));
-
-    if (!versionFrom || !versionTo) {
+    
+    const { from, to } = req.query;
+    const versions = entity.versions || [];
+    
+    const fromVersion = versions.find(v => v.versionNumber === parseInt(from));
+    const toVersion = versions.find(v => v.versionNumber === parseInt(to));
+    
+    if (!fromVersion || !toVersion) {
       return res.status(400).json({ error: 'Invalid version numbers' });
     }
-
+    
     res.json({
-      from: versionFrom,
-      to: versionTo,
+      from: fromVersion,
+      to: toVersion,
       differences: {
-        title: versionFrom.content.title !== versionTo.content.title,
-        description: versionFrom.content.description !== versionTo.content.description,
-        type: versionFrom.content.type !== versionTo.content.type
+        title: fromVersion.content?.title !== toVersion.content?.title,
+        description: fromVersion.content?.description !== toVersion.content?.description,
+        type: fromVersion.content?.type !== toVersion.content?.type
       }
     });
   } catch (error) {
     next(error);
   }
 };
-

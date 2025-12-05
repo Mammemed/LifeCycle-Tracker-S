@@ -8,7 +8,6 @@ const statusHistorySchema = new mongoose.Schema({
   comment: { type: String, default: '' }
 });
 
-// Content sub-schema for versions
 const contentSchema = new mongoose.Schema({
   title: { type: String, default: '' },
   description: { type: String, default: '' },
@@ -25,7 +24,7 @@ const versionSchema = new mongoose.Schema({
 
 const contributorSchema = new mongoose.Schema({
   name: { type: String, required: true },
-  role: { type: String, required: true }, // e.g., "author", "reviewer", "editor"
+  role: { type: String, required: true },
   lastActiveAt: { type: Date, default: Date.now }
 });
 
@@ -38,9 +37,10 @@ const commentSchema = new mongoose.Schema({
 });
 
 const entitySchema = new mongoose.Schema({
+  owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, // جديد: صاحب الكيان
   title: { type: String, required: true },
   description: { type: String, default: '' },
-  type: { type: String, default: 'article' }, // article, project, proposal, etc.
+  type: { type: String, default: 'article' },
   currentStatus: { type: String, required: true, default: 'draft' },
   statusHistory: [statusHistorySchema],
   versions: [versionSchema],
@@ -57,4 +57,3 @@ entitySchema.pre('save', function(next) {
 });
 
 module.exports = mongoose.model('Entity', entitySchema);
-

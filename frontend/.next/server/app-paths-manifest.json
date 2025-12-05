@@ -1,7 +1,10 @@
 {
+  "/not-found": "app/not-found.js",
+  "/login/page": "app/login/page.js",
+  "/signup/page": "app/signup/page.js",
   "/dashboard/page": "app/dashboard/page.js",
-  "/entities/[id]/compare/page": "app/entities/[id]/compare/page.js",
-  "/entities/[id]/page": "app/entities/[id]/page.js",
   "/statistics/page": "app/statistics/page.js",
-  "/entities/new/page": "app/entities/new/page.js"
+  "/entities/new/page": "app/entities/new/page.js",
+  "/profile/page": "app/profile/page.js",
+  "/entities/[id]/page": "app/entities/[id]/page.js"
 }
