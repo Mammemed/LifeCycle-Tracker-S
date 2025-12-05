@@ -13,7 +13,7 @@ export default function StatisticsPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    loadAnalytics()
+      loadAnalytics()
   }, [])
 
   const loadAnalytics = async () => {

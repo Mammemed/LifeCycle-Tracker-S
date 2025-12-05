@@ -23,6 +23,7 @@ mongoose.connect(config.mongoURI)
   });
 
 // Routes
+app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/entities', entityRoutes);
 app.use('/api/statistics', require('./routes/statisticsRoutes'));
 app.use('/api/reports', require('./routes/reportRoutes'));
