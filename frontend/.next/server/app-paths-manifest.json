@@ -1,11 +1,7 @@
 {
-  "/_not-found": "app/_not-found.js",
-  "/entities/[id]/page": "app/entities/[id]/page.js",
   "/login/page": "app/login/page.js",
-  "/dashboard/page": "app/dashboard/page.js",
-  "/page": "app/page.js",
   "/predictions/page": "app/predictions/page.js",
-  "/entities/new/page": "app/entities/new/page.js",
-  "/entities/[id]/compare/page": "app/entities/[id]/compare/page.js",
-  "/statistics/page": "app/statistics/page.js"
+  "/dashboard/page": "app/dashboard/page.js",
+  "/statistics/page": "app/statistics/page.js",
+  "/entities/new/page": "app/entities/new/page.js"
 }

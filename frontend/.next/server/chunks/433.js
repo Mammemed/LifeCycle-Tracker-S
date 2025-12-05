@@ -1,1 +1,0 @@
-"use strict";exports.id=433,exports.ids=[433],exports.modules={10433:(s,t,o)=>{o.d(t,{exportStatisticsToPDF:()=>e});async function e(s,t,o="statistics-export.pdf"){console.error("PDF export is only available in the browser")}}};
